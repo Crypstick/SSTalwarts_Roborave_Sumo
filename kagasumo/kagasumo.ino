@@ -1,3 +1,5 @@
+#include <arduino-timer.h>
+
 /*******************************************************************************
    THIS SOFTWARE IS PROVIDED IN AN "AS IS" CONDITION. NO WARRANTY AND SUPPORT
    IS APPLICABLE TO THIS SOFTWARE IN ANY FORM. CYTRON TECHNOLOGIES SHALL NOT,
@@ -76,6 +78,9 @@ int isObstacleRight = HIGH;
 int isObstacleLeftBack = HIGH;
 int isObstacleRightBack = HIGH;
 
+long start_time;
+
+
 int last_value = front; //last place where the opponnent was seen
 
 float distance_front;
@@ -83,6 +88,7 @@ float distance_left;
 float distance_right;
 
 bool tmp = true;
+bool loopbreaker = false;
 
 int iteration = 0;
 int last_line_seen;
@@ -101,12 +107,58 @@ void moveBackward() {
   RightMotor.setSpeed(-225);
 }
 void moveBackwardForIR() {
+  Serial.println("move back");
+  start_time = millis();
   LeftMotor.setSpeed(-225);
   RightMotor.setSpeed(-225);
-  if (isObstacleLeftBack == HIGH) {
+  Serial.println(millis() - start_time);
+  while (millis() - start_time < 500) { 
+    updateSensors();
+    if (isObstacleLeftBack == HIGH or isObstacleRightBack == HIGH) {
+      Serial.println("interrupted");
       seen_the_line(leftBack);
-    } else if (isObstacleRightBack == HIGH) {
-      seen_the_line(rightBack);
+      break;
+    }
+  }
+  start_time = millis();
+  LeftMotor.setSpeed(128);
+  RightMotor.setSpeed(-128);
+  Serial.println("move turn");
+  while (millis() - start_time < 250) {
+    updateSensors();
+    if (isObstacleLeftBack == HIGH or isObstacleRightBack == HIGH) {
+      Serial.println("interrupted");
+      seen_the_line(leftBack);
+      break;
+    }
+  }
+}
+void moveForwardForIR() {
+  Serial.println("move forward");
+  start_time = millis();
+  LeftMotor.setSpeed(225);
+  RightMotor.setSpeed(225);
+  Serial.println(millis() - start_time);
+  while (millis() - start_time < 500) { 
+    updateSensors();
+    if (isObstacleLeft == HIGH or isObstacleRight == HIGH) {
+      Serial.println("interrupted");
+      seen_the_line(left);
+      break;
+    }
+  }
+  start_time = millis();
+  LeftMotor.setSpeed(128);
+  RightMotor.setSpeed(-128);
+  Serial.println("move turn");
+  while (millis() - start_time < 250) {
+    updateSensors();
+    if (isObstacleLeft == HIGH or isObstacleRight == HIGH) {
+      Serial.println("interrupted");
+      seen_the_line(left);
+      break;
+    }
+  }
 }
 void turnLeft() {
   LeftMotor.setSpeed(-160);
@@ -155,26 +207,14 @@ void foundTheOpponent(int dir) {
 }
 void seen_the_line(int dir) {
   if (dir == left) {
-    moveBackward();
-    timer.in(500, turnRight);
-    delay(250);
+    moveBackwardForIR();
   } else if (dir == right) {
-    moveBackward();
-    delay(500);
-    turnLeft();
-    delay(200);
+    moveBackwardForIR();
   } else if (dir == leftBack) {
-    moveForward();
-    delay(500);
-    turnRight();
-    delay(200);
+    moveForwardForIR();
   } else if (dir == rightBack) {
-    moveForward();
-    delay(500);
-    turnLeft();
-    delay(200);
+    moveForwardForIR();
   }
-  moveForward();
 }
 
 // The setup routine runs once when you press reset.
@@ -191,6 +231,7 @@ void setup() {
 void loop() {
   timer.tick();
   updateSensors();
+
   if (mode == FULL_GAME_LOOP) {
 
     //check for line
