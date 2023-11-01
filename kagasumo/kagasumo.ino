@@ -29,6 +29,9 @@
 #include "CytronMotorDriver.h"
 #include "Ultrasonic.h"
 
+#include <arduino-timer.h>
+auto timer = timer_create_default();
+
 #define front 0
 #define left 1
 #define right 2
@@ -97,6 +100,14 @@ void moveBackward() {
   LeftMotor.setSpeed(-225);
   RightMotor.setSpeed(-225);
 }
+void moveBackwardForIR() {
+  LeftMotor.setSpeed(-225);
+  RightMotor.setSpeed(-225);
+  if (isObstacleLeftBack == HIGH) {
+      seen_the_line(leftBack);
+    } else if (isObstacleRightBack == HIGH) {
+      seen_the_line(rightBack);
+}
 void turnLeft() {
   LeftMotor.setSpeed(-160);
   RightMotor.setSpeed(160);
@@ -145,8 +156,7 @@ void foundTheOpponent(int dir) {
 void seen_the_line(int dir) {
   if (dir == left) {
     moveBackward();
-    delay(500);
-    turnRight();
+    timer.in(500, turnRight);
     delay(250);
   } else if (dir == right) {
     moveBackward();
@@ -179,6 +189,7 @@ void setup() {
 
 // The loop routine runs over and over again forever.
 void loop() {
+  timer.tick();
   updateSensors();
   if (mode == FULL_GAME_LOOP) {
 
