@@ -54,7 +54,7 @@ Ultrasonic ultrasonic_right(12, 13); //first Trig pin, econd Echo pin
 #define IR_BackRightPin A3
 
 // choose mode
-int mode = STAY_IN_CIRCLE_TESTING;
+int mode = FULL_GAME_LOOP;
   //IR_VALUES                   --> prints to serial port ir readings
   //ULTRASONIC_VALUES           --> prints to serial port ultrasonic readings
   //STAY_IN_CIRCLE_TESTING      --> runs the checking for line and going away from line without searching for opponet
@@ -85,21 +85,25 @@ int iteration = 0;
 int last_line_seen;
 
 // qol functions
+void rushForward() {
+  LeftMotor.setSpeed(225);
+  RightMotor.setSpeed(225);
+}
 void moveForward() {
-  LeftMotor.setSpeed(200);
-  RightMotor.setSpeed(200);
+  LeftMotor.setSpeed(138);
+  RightMotor.setSpeed(138);
 }
 void moveBackward() {
   LeftMotor.setSpeed(-225);
-  RightMotor.setSpeed(-22);
+  RightMotor.setSpeed(-225);
 }
 void turnLeft() {
-  LeftMotor.setSpeed(-150);
-  RightMotor.setSpeed(150);
+  LeftMotor.setSpeed(-160);
+  RightMotor.setSpeed(160);
 }
 void turnRight() {
-  LeftMotor.setSpeed(150);
-  RightMotor.setSpeed(-150);
+  LeftMotor.setSpeed(160);
+  RightMotor.setSpeed(-160);
 }
 void stopMoving() {
   LeftMotor.setSpeed(0);
@@ -108,8 +112,11 @@ void stopMoving() {
 void updateSensors() {
   // ultrasonic values given in CM
   distance_front = ultrasonic_front.read();
+  //delay(100);
   distance_left = ultrasonic_left.read();
+  //delay(100);
   distance_right = ultrasonic_right.read();
+  //delay(100);
 
   // IR sensor values
   isObstacleLeft = digitalRead(IR_LeftPin);
@@ -119,9 +126,13 @@ void updateSensors() {
 }
 void foundTheOpponent(int dir) {
   if (dir == front) {
-    if (last_value == left) {turnRight(); delay(0);}
-    else if (last_value == right) {turnLeft(); delay(0);}
-    moveForward();
+    if (last_value == left) {turnRight(); delay(15);}
+    else if (last_value == right) {turnLeft(); delay(15);}
+    if (distance_front < 20) {
+      rushForward();
+    } else {
+      moveForward();
+    }
     last_value = front;
   } else if (dir == left) {
     last_value = left;
@@ -133,19 +144,27 @@ void foundTheOpponent(int dir) {
 }
 void seen_the_line(int dir) {
   if (dir == left) {
-    last_line_seen = left;
-    //curveBackward(left);
+    moveBackward();
+    delay(500);
+    turnRight();
+    delay(250);
   } else if (dir == right) {
-    last_line_seen = right;
-    //curveBackward(right);
+    moveBackward();
+    delay(500);
+    turnLeft();
+    delay(200);
   } else if (dir == leftBack) {
-    last_line_seen = leftBack;
-    //curveForward(right);
+    moveForward();
+    delay(500);
+    turnRight();
+    delay(200);
   } else if (dir == rightBack) {
-    last_line_seen = rightBack;
-    //curveForward(left);
+    moveForward();
+    delay(500);
+    turnLeft();
+    delay(200);
   }
-  iteration = 20;
+  moveForward();
 }
 
 // The setup routine runs once when you press reset.
@@ -169,35 +188,18 @@ void loop() {
     } else if (isObstacleRight == HIGH) {
       seen_the_line(right);  
     } else if (isObstacleLeftBack == HIGH) {
-      if ( ((last_line_seen == left or last_line_seen == right) and (iteration > 14)) == false ) {
-        seen_the_line(leftBack);
-      }
+      seen_the_line(leftBack);
     } else if (isObstacleRightBack == HIGH) {
-      if ( ((last_line_seen == left or last_line_seen == right) and (iteration > 14)) == false ) {
-        seen_the_line(rightBack);
-      }
-    }
+      seen_the_line(rightBack);
 
-    // deal with line
-    if (iteration > 7) {
-      iteration -= 1;
-      if (last_line_seen == left or last_line_seen == right) moveBackward();
-      else moveForward();
-    } else if (iteration != 0){
-      iteration -= 1;
-      if (last_line_seen == left or last_line_seen == leftBack) {
-        turnRight();
-      } else {
-        turnLeft();
-      }
 
     // check for bot infront of sensors
     } else { 
       if (distance_front < 50 and distance_front > 0) {
         foundTheOpponent(front);
-      } else if (distance_left < 50) {
+      } else if (distance_left < 50 and distance_left > 0) {
         foundTheOpponent(left);
-      } else if (distance_right < 50) {
+      } else if (distance_right < 50 and distance_right > 0) {
         foundTheOpponent(right);
 
       // check for last value fallback
@@ -211,41 +213,23 @@ void loop() {
         }
       }
     }
+      
+    
 
 
 
 
   } else if (mode == STAY_IN_CIRCLE_TESTING) {
+        //check for line
     if (isObstacleLeft == HIGH) {
       seen_the_line(left);
     } else if (isObstacleRight == HIGH) {
       seen_the_line(right);  
     } else if (isObstacleLeftBack == HIGH) {
-      if ( ((last_line_seen == left or last_line_seen == right) and (iteration > 14)) == false ) {
-         // seen_the_line(leftBack);
-      }
+      seen_the_line(leftBack);
     } else if (isObstacleRightBack == HIGH) {
-      if ( ((last_line_seen == left or last_line_seen == right) and (iteration > 14)) == false ) {
-       // seen_the_line(rightBack);
-      }
+      seen_the_line(rightBack);
     }
-
-    // deal with line
-    if (iteration > 7) {
-      iteration -= 1;
-      if (last_line_seen == left or last_line_seen == right) moveBackward();
-      else moveForward();
-    } else if (iteration != 0){
-      iteration -= 1;
-      if (last_line_seen == left or last_line_seen == leftBack) {
-        turnRight();
-      } else {
-        turnLeft();
-      }
-    } else {
-      moveForward();
-    }
-      
 
 
 
@@ -298,6 +282,7 @@ void loop() {
   }
   delay(10);
 }
+
 
 
 
