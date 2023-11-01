@@ -79,6 +79,7 @@ int isObstacleLeftBack = HIGH;
 int isObstacleRightBack = HIGH;
 
 long start_time;
+bool callInterrupt = false;
 
 
 int last_value = front; //last place where the opponnent was seen
@@ -107,7 +108,8 @@ void moveBackward() {
   RightMotor.setSpeed(-225);
 }
 void moveBackwardForIR() {
-  Serial.println("move back");
+  callInterrupt = false;
+  Serial.println("\nmove back");
   start_time = millis();
   LeftMotor.setSpeed(-225);
   RightMotor.setSpeed(-225);
@@ -116,7 +118,7 @@ void moveBackwardForIR() {
     updateSensors();
     if (isObstacleLeftBack == HIGH or isObstacleRightBack == HIGH) {
       Serial.println("interrupted");
-      seen_the_line(leftBack);
+      callInterrupt = true;
       break;
     }
   }
@@ -124,17 +126,23 @@ void moveBackwardForIR() {
   LeftMotor.setSpeed(128);
   RightMotor.setSpeed(-128);
   Serial.println("move turn");
-  while (millis() - start_time < 250) {
-    updateSensors();
-    if (isObstacleLeftBack == HIGH or isObstacleRightBack == HIGH) {
-      Serial.println("interrupted");
-      seen_the_line(leftBack);
-      break;
+  if (callInterrupt == false) {
+    while (millis() - start_time < 250) {
+      updateSensors();
+      if (isObstacleLeftBack == HIGH or isObstacleRightBack == HIGH) {
+        Serial.println("interrupted");
+        callInterrupt = true;
+        break;
+      }
     }
+  }
+  if (callInterrupt) {
+    seen_the_line(leftBack);
   }
 }
 void moveForwardForIR() {
-  Serial.println("move forward");
+  callInterrupt = false;
+  Serial.println("\nmove back");
   start_time = millis();
   LeftMotor.setSpeed(225);
   RightMotor.setSpeed(225);
@@ -143,7 +151,7 @@ void moveForwardForIR() {
     updateSensors();
     if (isObstacleLeft == HIGH or isObstacleRight == HIGH) {
       Serial.println("interrupted");
-      seen_the_line(left);
+      callInterrupt = true;
       break;
     }
   }
@@ -151,13 +159,18 @@ void moveForwardForIR() {
   LeftMotor.setSpeed(128);
   RightMotor.setSpeed(-128);
   Serial.println("move turn");
-  while (millis() - start_time < 250) {
-    updateSensors();
-    if (isObstacleLeft == HIGH or isObstacleRight == HIGH) {
-      Serial.println("interrupted");
-      seen_the_line(left);
-      break;
+  if (callInterrupt == false) {
+    while (millis() - start_time < 250) {
+      updateSensors();
+      if ((isObstacleLeft == HIGH or isObstacleRight == HIGH)) {
+        Serial.println("interrupted");
+        callInterrupt = true;
+        break;
+      }
     }
+  }
+  if (callInterrupt) {
+    seen_the_line(left);
   }
 }
 void turnLeft() {
@@ -188,6 +201,7 @@ void updateSensors() {
   isObstacleRightBack = digitalRead(IR_BackRightPin);
 }
 void foundTheOpponent(int dir) {
+  Serial.println("found the opponent" + String(dir));
   if (dir == front) {
     if (last_value == left) {turnRight(); delay(15);}
     else if (last_value == right) {turnLeft(); delay(15);}
@@ -247,11 +261,11 @@ void loop() {
 
     // check for bot infront of sensors
     } else { 
-      if (distance_front < 50 and distance_front > 0) {
+      if (distance_front < 50 && distance_front > 0) {
         foundTheOpponent(front);
-      } else if (distance_left < 50 and distance_left > 0) {
+      } else if (distance_left < 50 && distance_left > 0) {
         foundTheOpponent(left);
-      } else if (distance_right < 50 and distance_right > 0) {
+      } else if (distance_right < 50 && distance_right > 0) {
         foundTheOpponent(right);
 
       // check for last value fallback
