@@ -59,7 +59,7 @@ Ultrasonic ultrasonic_right(12, 13); //first Trig pin, econd Echo pin
 #define IR_BackRightPin A3
 
 // choose mode
-int mode = FULL_GAME_LOOP;
+int mode = STAY_IN_CIRCLE_TESTING;
   //IR_VALUES                   --> prints to serial port ir readings
   //ULTRASONIC_VALUES           --> prints to serial port ultrasonic readings
   //STAY_IN_CIRCLE_TESTING      --> runs the checking for line and going away from line without searching for opponet
@@ -100,8 +100,8 @@ void rushForward() {
   RightMotor.setSpeed(225);
 }
 void moveForward() {
-  LeftMotor.setSpeed(138);
-  RightMotor.setSpeed(138);
+  LeftMotor.setSpeed(150);
+  RightMotor.setSpeed(150);
 }
 void moveBackward() {
   LeftMotor.setSpeed(-225);
@@ -188,11 +188,11 @@ void stopMoving() {
 void updateSensors() {
   // ultrasonic values given in CM
   distance_front = ultrasonic_front.read();
-  //delay(100);
+  delay(10);
   distance_left = ultrasonic_left.read();
-  //delay(100);
+  delay(10);
   distance_right = ultrasonic_right.read();
-  //delay(100);
+  delay(10);
 
   // IR sensor values
   isObstacleLeft = digitalRead(IR_LeftPin);
@@ -203,9 +203,9 @@ void updateSensors() {
 void foundTheOpponent(int dir) {
   Serial.println("found the opponent" + String(dir));
   if (dir == front) {
-    if (last_value == left) {turnRight(); delay(15);}
-    else if (last_value == right) {turnLeft(); delay(15);}
-    if (distance_front < 20) {
+    if (last_value == left) {turnRight(); delay(30);}
+    else if (last_value == right) {turnLeft(); delay(30);}
+    if (distance_front < 10) {
       rushForward();
     } else {
       moveForward();
@@ -261,11 +261,11 @@ void loop() {
 
     // check for bot infront of sensors
     } else { 
-      if (distance_front < 50 && distance_front > 0) {
+      if (distance_front < 80 && distance_front > 0) {
         foundTheOpponent(front);
-      } else if (distance_left < 50 && distance_left > 0) {
+      } else if (distance_left < 80 && distance_left > 0) {
         foundTheOpponent(left);
-      } else if (distance_right < 50 && distance_right > 0) {
+      } else if (distance_right < 80 && distance_right > 0) {
         foundTheOpponent(right);
 
       // check for last value fallback
@@ -295,6 +295,8 @@ void loop() {
       seen_the_line(leftBack);
     } else if (isObstacleRightBack == HIGH) {
       seen_the_line(rightBack);
+    } else {
+      moveForward();
     }
 
 
@@ -337,10 +339,10 @@ void loop() {
   } else if (mode == ULTRASONIC_VALUES) {
 
     //Serial.println("\nUltrasonics");
-    //Serial.println("front:" + String(distance_front));
+    Serial.println("front:" + String(distance_front));
     //Serial.println("left" + String(distance_left));
-    Serial.println("right" + String(distance_right));
-    delay(0);
+    //Serial.println("right" + String(distance_right));
+    delay(10);
 
 
   } else {
