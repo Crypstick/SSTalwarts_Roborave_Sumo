@@ -1,3 +1,5 @@
+
+
 #include <arduino-timer.h>
 
 /*******************************************************************************
@@ -29,7 +31,7 @@
  *******************************************************************************/
 
 #include "CytronMotorDriver.h"
-#include "Ultrasonic.h"
+#include <Ultrasonic.h>
 
 #include <arduino-timer.h>
 auto timer = timer_create_default();
@@ -59,7 +61,7 @@ Ultrasonic ultrasonic_right(12, 13); //first Trig pin, econd Echo pin
 #define IR_BackRightPin A3
 
 // choose mode
-int mode = STAY_IN_CIRCLE_TESTING;
+int mode = ULTRASONIC_VALUES;
   //IR_VALUES                   --> prints to serial port ir readings
   //ULTRASONIC_VALUES           --> prints to serial port ultrasonic readings
   //STAY_IN_CIRCLE_TESTING      --> runs the checking for line and going away from line without searching for opponet
