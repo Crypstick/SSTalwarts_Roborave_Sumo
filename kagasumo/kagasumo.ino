@@ -342,9 +342,9 @@ void loop() {
 
     //Serial.println("\nUltrasonics");
     Serial.println("front:" + String(distance_front));
-    //Serial.println("left" + String(distance_left));
-    //Serial.println("right" + String(distance_right));
-    delay(10);
+    Serial.println("left" + String(distance_left));
+    Serial.println("right" + String(distance_right));
+    delay(1000);
 
 
   } else {

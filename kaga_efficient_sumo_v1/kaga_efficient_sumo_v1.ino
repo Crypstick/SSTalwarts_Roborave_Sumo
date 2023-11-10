@@ -42,9 +42,9 @@
 //---------------------------------config--------------------------------------------------------------------------
 
 // configure ultrasonic
-Ultrasonic ultrasonic_front(10, 11); //first Trig pin, second Echo pin
-Ultrasonic ultrasonic_left(8, 9); //first Trig pin, second Echo pin
-Ultrasonic ultrasonic_right(12, 13); //first Trig pin, econd Echo pin
+Ultrasonic US_front(10, 11); //first Trig pin, second Echo pin
+Ultrasonic US_left(8, 9); //first Trig pin, second Echo pin
+Ultrasonic US_right(12, 13); //first Trig pin, econd Echo pin
 
 // configure ir ports
 #define IR_LeftPin A0
@@ -54,8 +54,8 @@ Ultrasonic ultrasonic_right(12, 13); //first Trig pin, econd Echo pin
 //---------------------------------config-----------------------------------------------------------------------------
 
 // Configure the motor driver.
-CytronMD LeftMotor(PWM_DIR, 5, 4);  // PWM, DIR
-CytronMD RightMotor(PWM_DIR, 6, 7); // PWM, DIR
+CytronMD leftMotor(PWM_DIR, 5, 4);  // PWM, DIR
+CytronMD rightMotor(PWM_DIR, 6, 7); // PWM, DIR
 
 // var set up
 int isObstacleLeft = HIGH;
@@ -65,7 +65,7 @@ int isObstacleRightBack = HIGH;
 
 
 
-int last_value = front; //last place where the opponnent was seen
+int last_value = 10; //last place where the opponnent was seen
 
 float distance_front;
 float distance_left;
@@ -74,25 +74,25 @@ float nearest;
 
 // qol functions
 void rushForward() {
-  LeftMotor.setSpeed(255);
-  RightMotor.setSpeed(255);
+  leftMotor.setSpeed(255);
+  rightMotor.setSpeed(255);
 }
 void moveForward() {
-  LeftMotor.setSpeed(130);
-  RightMotor.setSpeed(130);
+  leftMotor.setSpeed(140);
+  rightMotor.setSpeed(140);
 }
 void moveBackward() {
-  LeftMotor.setSpeed(-130);
-  RightMotor.setSpeed(-130);
+  leftMotor.setSpeed(-140);
+  rightMotor.setSpeed(-140);
 }
 void turnLeft() {
-  LeftMotor.setSpeed(-160);
-  RightMotor.setSpeed(160);
+  leftMotor.setSpeed(-180);
+  rightMotor.setSpeed(180);
 }
 void turnRight() {
 
-  LeftMotor.setSpeed(160);
-  RightMotor.setSpeed(-160);
+  leftMotor.setSpeed(180);
+  rightMotor.setSpeed(-180);
 }
 
 
@@ -130,7 +130,7 @@ void setup() {
   pinMode(IR_BackLeftPin, INPUT);
   pinMode(IR_BackRightPin, INPUT);
   Serial.begin(9600);
-  delay(3000); // tune as required
+  delay(1500); // tune as required
 }
 
 long tmp;
@@ -145,40 +145,41 @@ void loop() {
 
   //check for line
   if (isObstacleLeft == HIGH or isObstacleRight == HIGH) {
-    LeftMotor.setSpeed(-255);
-    RightMotor.setSpeed(-130);
+    leftMotor.setSpeed(-180);
+    rightMotor.setSpeed(-180);
     // hopefully fixes the issue of the bot being completely locked on bot and suiciding
     delay(300);
     // turning right
-    LeftMotor.setSpeed(160);
-    RightMotor.setSpeed(-160);
+    leftMotor.setSpeed(180);
+    rightMotor.setSpeed(-180);
     delay(150);
 
   } else if (isObstacleLeftBack == HIGH or isObstacleRightBack == HIGH) {
-    LeftMotor.setSpeed(130);
-    RightMotor.setSpeed(130);
+    leftMotor.setSpeed(180);
+    rightMotor.setSpeed(180);
     delay(150);
   
 
     // check for bot infront of sensors
   } else {
-    distance_front = ultrasonic_front.read();
+    distance_front = US_front.read();
     delay(3);
-    distance_left = ultrasonic_left.read();
+    distance_left = US_left.read();
     delay(3);
-    distance_right = ultrasonic_right.read();
+    distance_right = US_right.read();
     delay(3);
 
-    /*
+    
     if (distance_front < 75 && distance_front > 0) {
       foundTheOpponent(front);
     } else if (distance_left < 75 && distance_left > 0) {
       foundTheOpponent(left);
     } else if (distance_right < 75 && distance_right > 0) {
       foundTheOpponent(right);
-      */
+     
 
-    tmp = min(distance_front, distance_left);
+    /*
+    tmp = min(distance_front, disatance_left);
     nearest = min(tmp,  distance_right);
     if (nearest > 75 && nearest > 0) {
       if (nearest == distance_front) {
@@ -188,11 +189,11 @@ void loop() {
       } else if (nearest == distance_right) {
         foundTheOpponent(right);
       }
-
+      */
     
       // check for last value fallback
     } else {
-      if (last_value != front) {
+      if (last_value != 10) {
         foundTheOpponent(last_value);
 
         //just turn to the right
@@ -228,11 +229,11 @@ void loop() {
 
 //reference
 /*
-  LeftMotor.setSpeed(-255);   // Motor 1 runs forward at full speed.
-  RightMotor.setSpeed(-255);  // Motor 2 runs backward at full speed.
+  leftMotor.setSpeed(-255);   // Motor 1 runs forward at full speed.
+  rightMotor.setSpeed(-255);  // Motor 2 runs backward at full speed.
   delay(1000);
 
-  LeftMotor.setSpeed(150);   // Motor 1 runs forward at full speed.
-  RightMotor.setSpeed(150);  // Motor 2 runs backward at full speed.
+  leftMotor.setSpeed(150);   // Motor 1 runs forward at full speed.
+  rightMotor.setSpeed(150);  // Motor 2 runs backward at full speed.
   delay(1000);
 */
