@@ -90,7 +90,6 @@ void turnLeft() {
   rightMotor.setSpeed(180);
 }
 void turnRight() {
-
   leftMotor.setSpeed(180);
   rightMotor.setSpeed(-180);
 }
@@ -163,11 +162,8 @@ void loop() {
     // check for bot infront of sensors
   } else {
     distance_front = US_front.read();
-    delay(3);
     distance_left = US_left.read();
-    delay(3);
     distance_right = US_right.read();
-    delay(3);
 
     
     if (distance_front < 75 && distance_front > 0) {
