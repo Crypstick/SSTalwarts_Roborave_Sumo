@@ -22,8 +22,8 @@ void line_detection();
 //--- configuration --- //
 
 // motor driver
-CytronMD leftMotor(PWM_DIR, 5, 4);
-CytronMD rightMotor(PWM_DIR, 6, 7);
+CytronMD leftMotor(PWM_DIR, 9, 8);
+CytronMD rightMotor(PWM_DIR, 11, 13);
 
 // Delay testing
 Timer timer;
@@ -43,29 +43,52 @@ SharpIR IR_right(SharpIR::GP2Y0A21YK0F, A4 );
 // variable declaration
 int firstStart = HIGH;
 
+const int SAMPLE_SIZE = 20;
+const int SENSOR_NUM = 5;
+const int SENSOR_PIN[SENSOR_NUM] = {A0, A1, A2, A3, A4}; // A0 Clear, A1 Clear, A2 Clear, A3 Clear, A4 Clear
+
+int sensor_readings[SENSOR_NUM][SAMPLE_SIZE];
+int readings_it[SENSOR_NUM];
+bool nums_filled[SENSOR_NUM];
+
+
+
+//function declearc
+int filter_sensor(int sensor);
+int raw_sensor(int sensor);
+int findMax(int nums[SAMPLE_SIZE]);
+int findMin(int nums[SAMPLE_SIZE]);
+int findMean(int nums[SAMPLE_SIZE]);
+void debugging(int mode);
 
 void setup() {
-  // put your setup code here, to run once:
-  Serial.begin(9600);
+  Serial.begin(9600); //Enable the serial comunication
   pinMode(line_left, INPUT);
   pinMode(line_right, INPUT);
+  // set initialison latch to false
+  for (int i = 0; i < SENSOR_NUM; i++) {
+    nums_filled[i] = false;
+    readings_it[i] = 0;
+  }
   delay(1500); // sumo rules, adjust as required. 
-}
+  //start code here
+  
+} 
+
 
 void loop() {
   // put your main code here, to run repeatedly:
-  line_detection();
 
-  int distance_frontLeft = IR_frontLeft.getDistance();
-  int distance_frontMiddle = IR_frontMiddle.getDistance();
-  int distance_frontRight = IR_frontRight.getDistance();
-  int distance_left = IR_left.getDistance();
-  int distance_right = IR_right.getDistance();
+  // change pin numbers as required
+  int distance_frontLeft = filter_sensor(0);
+  int distance_frontMiddle = filter_sensor(1);
+  int distance_frontRight = filter_sensor(2);
+  int distance_left = filter_sensor(3);
+  int distance_right = filter_sensor(4);
 
   int minFront = std::min({distance_frontMiddle, distance_frontLeft, distance_frontRight});
 
   bool isOpponentFront = (minFront < 75);
-
   if (isOpponentFront) {
       if (minFront == distance_frontMiddle) {
         Serial.println("hi middle");
@@ -78,6 +101,7 @@ void loop() {
         leftMotor.setSpeed(-200 + distance_frontLeft); // adjusts speed of rotation based on distance. if far away, curve is smoother. if close, curve is steeper
         rightMotor.setSpeed(255);
         }
+        
 
         /*
         note: while loop could be an issue, big blocking code and if you dont track well, its suicide cos cld end up running it and stuck within while without line detection...
@@ -106,6 +130,7 @@ void loop() {
       } else { // start rotating till detection happens
       leftMotor.setSpeed(-180); 
       rightMotor.setSpeed(180);
+      Serial.println("rotating");
       };
     };
 };
@@ -115,7 +140,7 @@ void line_detection() {
   int lineDetect_left = digitalRead(line_left);
   int lineDetect_right = digitalRead(line_right);
 
-  if (lineDetect_left == HIGH and lineDetect_right == HIGH) {
+  if (lineDetect_left == HIGH and lineDetect_right == HIGH) { //
     leftMotor.setSpeed(-180);
     rightMotor.setSpeed(-180);
     delay(150);
@@ -137,3 +162,70 @@ void line_detection() {
     delay(100);
   }
 };
+
+int filter_sensor(int sensor) {
+  int distance = raw_sensor(sensor);
+  
+  //initialising at program start
+  if (!nums_filled[sensor]) {
+    nums_filled[sensor] = true;
+    for (int i = 0; i < SAMPLE_SIZE - 1; i++) {
+      if (sensor_readings[sensor][i] == 0) {
+        sensor_readings[sensor][i] = distance;
+        nums_filled[sensor] = false;
+        break;
+      }
+    }
+    //is it the last slot left to fill
+    if (nums_filled) sensor_readings[sensor][SAMPLE_SIZE - 1] = distance;
+
+  }
+  else { // main loop after initisalsting
+    //replace old
+    sensor_readings[sensor][readings_it[sensor]] = distance;
+    if (readings_it[sensor] == SAMPLE_SIZE - 1) readings_it[sensor] = 0;
+    else readings_it[sensor]++;
+    
+    
+
+    //filter
+    return findMean(sensor_readings[sensor]);
+  }
+}
+
+int raw_sensor(int sensor) {
+  // the last number makes the thing curved eg higher means when its closer the number changes slower, when further number changes faster
+  //distance = 29.988 * pow(map(analogRead(A1), 0, 1023, 0, 5000)/1000.0, -1.173) ;
+  int distance = 29.988 * pow(map(analogRead(SENSOR_PIN[sensor]), 0, 1023, 0, 5000) / 1000.0, -1.173) ;
+
+  return distance;
+}
+
+int findMax(int nums[SAMPLE_SIZE]) {
+  int highest;
+  for (int i = 0; i < SAMPLE_SIZE; i++) {
+    if (nums[i] > highest) {
+      highest = nums[i];
+    }
+  }
+  return highest;
+}
+
+int findMin(int nums[SAMPLE_SIZE]) {
+  int lowest = 5000;
+  for (int i = 0; i < SAMPLE_SIZE; i++) {
+    if (nums[i] < lowest) {
+      lowest = nums[i];
+    }
+  }
+  return lowest;
+}
+
+int findMean(int nums[SAMPLE_SIZE]) {
+  int sum = 0;
+  for (int i = 0; i < SAMPLE_SIZE; i++) {
+    sum += nums[i];
+  }
+  return sum / SAMPLE_SIZE;
+}
+
