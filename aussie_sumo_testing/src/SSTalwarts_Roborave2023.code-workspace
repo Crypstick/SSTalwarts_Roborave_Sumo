@@ -1,0 +1,16 @@
+{
+  "folders": [
+    {
+      "path": "../.."
+    },
+    {
+      "name": "aussie_sumo_testing",
+      "path": ".."
+    },
+    {
+      "name": "aussie_sumo_testing_uno",
+      "path": "../../../../PlatformIO/Projects/aussie_sumo_testing_uno"
+    }
+  ],
+  "settings": {}
+}

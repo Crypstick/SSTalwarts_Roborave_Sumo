@@ -1,6 +1,4 @@
 #include <Arduino.h>
-#include <iostream>
-#include <algorithm>
 #include "CytronMotorDriver.h"
 #include "Timer.h"
 #include "SharpIR.h"
@@ -76,36 +74,46 @@ void setup() {
   
 } 
 
+void readSensors(int* distance_left, int* distance_frontLeft, int* distance_frontMiddle, int* distance_frontRight, int* distance_right, int* minFront) {
+  *distance_left = filter_sensor(0);
+  *distance_frontLeft = filter_sensor(1);
+  *distance_frontMiddle = filter_sensor(2);
+  *distance_frontRight = filter_sensor(3);
+  *distance_right = filter_sensor(4);
+
+
+  int values[] = {distance_frontMiddle, distance_frontLeft, distance_frontRight};
+  *minFront = findMin(values);
+};
+
 
 void loop() {
   // put your main code here, to run repeatedly:
 
   // change pin numbers as required
-  int distance_frontLeft = filter_sensor(0);
-  int distance_frontMiddle = filter_sensor(1);
-  int distance_frontRight = filter_sensor(2);
-  int distance_left = filter_sensor(3);
-  int distance_right = filter_sensor(4);
-
-  int minimumFront = std::min({distance_frontMiddle, distance_frontLeft, distance_frontRight});
-
-  int values[] = {distance_frontMiddle, distance_frontLeft, distance_frontRight};
-  int minFront = findMin(values);
-
-  
+  int distance_left;
+  int distance_frontLeft;
+  int distance_frontMiddle;
+  int distance_frontRight;
+  int distance_right;
+  int minFront;
+  readSensors(&distance_left, &distance_frontLeft, &distance_frontMiddle, &distance_frontRight, &distance_right, &minFront);
 
 
 
-  bool isOpponentFront = (minFront < 75 && minFront > 0);
+  bool isOpponentFront = (minFront < 75);
   if (isOpponentFront) {
       if (minFront == distance_frontMiddle) {
         Serial.println("hi middle");
+        Serial.println(distance_frontMiddle);
         leftMotor.setSpeed(255);
         rightMotor.setSpeed(255);
       }
       else if (minFront == distance_frontLeft) {
         Serial.println("hi front lefty");
+        Serial.println(distance_frontLeft);
         while (!(distance_frontMiddle < 75)) {
+        readSensors(&distance_left, &distance_frontLeft, &distance_frontMiddle, &distance_frontRight, &distance_right, &minFront);
         leftMotor.setSpeed(-200 + distance_frontLeft); // adjusts speed of rotation based on distance. if far away, curve is smoother. if close, curve is steeper
         rightMotor.setSpeed(255);
         }
@@ -121,9 +129,12 @@ void loop() {
         }
       else {
         Serial.println("hi front righty");
+        Serial.println(distance_frontRight);
+        Serial.println(distance_frontMiddle);
         while (!(distance_frontMiddle < 75)) {
-        leftMotor.setSpeed(255);
-        rightMotor.setSpeed(-200 + distance_frontLeft); // adjusts speed of rotation based on distance. if far away, curve is smoother. if close, curve is steeper
+          readSensors(&distance_left, &distance_frontLeft, &distance_frontMiddle, &distance_frontRight, &distance_right, &minFront);
+          leftMotor.setSpeed(255);
+          rightMotor.setSpeed(-200 + distance_frontLeft); // adjusts speed of rotation based on distance. if far away, curve is smoother. if close, curve is steeper
         }
       }
     } else if (distance_left < 75 && distance_left < distance_right) {
@@ -141,6 +152,7 @@ void loop() {
       Serial.println("rotating");
       };
     };
+    delay(5);
 };
 
 // put function definitions here:
@@ -234,6 +246,10 @@ int findMean(int nums[SAMPLE_SIZE]) {
   for (int i = 0; i < SAMPLE_SIZE; i++) {
     sum += nums[i];
   }
-  return sum / SAMPLE_SIZE;
+  if (sum / SAMPLE_SIZE < 5) {
+    return 1000;
+  } else {
+    return sum / SAMPLE_SIZE;
+  }
 }
 
