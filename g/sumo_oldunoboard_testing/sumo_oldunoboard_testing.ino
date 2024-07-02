@@ -43,12 +43,15 @@ int firstStart = HIGH;
 
 const int SAMPLE_SIZE = 20;
 const int SENSOR_NUM = 5;
+const int speed = 255;
+const int front_sensors_offset = 15;
 const int SENSOR_PIN[SENSOR_NUM] = {A0, A1, A2, A3, A4}; // A0 Clear, A1 Clear, A2 Clear, A3 Clear, A4 Clear
 const int frontSensors[SENSOR_NUM] = {};
 
 int sensor_readings[SENSOR_NUM][SAMPLE_SIZE];
 int readings_it[SENSOR_NUM];
 bool nums_filled[SENSOR_NUM];
+bool firstStart = true;
 
 
 
@@ -56,7 +59,7 @@ bool nums_filled[SENSOR_NUM];
 int filter_sensor(int sensor);
 int raw_sensor(int sensor);
 int findMax(int nums[SAMPLE_SIZE]);
-int findMin(int nums[SAMPLE_SIZE]);
+int findMinFromSample(int nums[SAMPLE_SIZE]);
 int findMean(int nums[SAMPLE_SIZE]);
 void debugging(int mode);
 
@@ -83,8 +86,35 @@ void readSensors(int* distance_left, int* distance_frontLeft, int* distance_fron
 
 
   int values[] = {distance_frontMiddle, distance_frontLeft, distance_frontRight};
-  *minFront = findMin(values);
+  *minFront = findMinFromSample(values);
 };
+
+void setMotors(int left_speed, int right_speed) {
+  leftMotor.setSpeed(left_speed);
+  rightMotor.setSpeed(right_speed);
+}
+
+int findMatch(int* values, int min) {
+  for (int i = 0; i < 5; i++) {
+    if (values[i] == min) {
+      if ((i == 1 || i == 2 || i == 3) && (abs(values[2] - values[1]) < front_sensors_offset || abs(values[2] - values[3]) < front_sensors_offset)) {
+        return 2;
+      } else {
+        return i;
+      }
+    }
+  }
+}
+
+int findMinValue(int* nums) {
+  int lowest = 5000;
+  for (int i = 0; i < 5; i++) {
+    if (nums[i] < lowest) {
+      lowest = nums[i];
+    }
+  }
+  return lowest;
+}
 
 
 void loop() {
@@ -99,60 +129,30 @@ void loop() {
   int minFront;
   readSensors(&distance_left, &distance_frontLeft, &distance_frontMiddle, &distance_frontRight, &distance_right, &minFront);
 
+  int values[] = {distance_left, distance_frontLeft, distance_frontMiddle, distance_frontRight, distance_right};
+  int min = findMinValue(values);
 
+  int direction = findMatch(values, min);
+  Serial.println(direction);
 
-  bool isOpponentFront = (minFront < 75);
-  if (isOpponentFront) {
-      if (minFront == distance_frontMiddle) {
-        Serial.println("hi middle");
-        Serial.println(distance_frontMiddle);
-        leftMotor.setSpeed(255);
-        rightMotor.setSpeed(255);
-      }
-      else if (minFront == distance_frontLeft) {
-        Serial.println("hi front lefty");
-        Serial.println(distance_frontLeft);
-        while (!(distance_frontMiddle < 75)) {
-        readSensors(&distance_left, &distance_frontLeft, &distance_frontMiddle, &distance_frontRight, &distance_right, &minFront);
-        leftMotor.setSpeed(-200 + distance_frontLeft); // adjusts speed of rotation based on distance. if far away, curve is smoother. if close, curve is steeper
-        rightMotor.setSpeed(255);
-        }
-        
-
-        /*
-        note: while loop could be an issue, big blocking code and if you dont track well, its suicide cos cld end up running it and stuck within while without line detection...
-
-        last_value = front_left
-        if (last_value = front_left) {
-          // run above code?
-        */
-        }
-      else {
-        Serial.println("hi front righty");
-        Serial.println(distance_frontRight);
-        Serial.println(distance_frontMiddle);
-        while (!(distance_frontMiddle < 75)) {
-          readSensors(&distance_left, &distance_frontLeft, &distance_frontMiddle, &distance_frontRight, &distance_right, &minFront);
-          leftMotor.setSpeed(255);
-          rightMotor.setSpeed(-200 + distance_frontLeft); // adjusts speed of rotation based on distance. if far away, curve is smoother. if close, curve is steeper
-        }
-      }
-    } else if (distance_left < 75 && distance_left < distance_right) {
-      Serial.println("hi lefty");
-    } else if (distance_right < 75 && distance_right < distance_left) {
-      Serial.println("hi righty");
-    } else {
-      if (firstStart == HIGH) { //slight move forward if match js started and can't detect anywhere
-        leftMotor.setSpeed(100);
-        rightMotor.setSpeed(100); 
-        firstStart = LOW;
-      } else { // start rotating till detection happens
-      leftMotor.setSpeed(-180); 
-      rightMotor.setSpeed(180);
-      Serial.println("rotating");
-      };
-    };
-    delay(5);
+  if (min > 6 && min < 30) { // tune range as required
+    if (direction == 0 || direction == 1) {
+      setMotors(speed * -1, speed);
+    } else if (direction == 2) {
+      setMotors(speed, speed);
+    } else if (direction == 3 || direction == 4) {
+      setMotors(speed, speed * -1);
+    }
+  } else {
+    if (firstStart) {
+      setMotors(255, 255);
+      delay(100);
+      firstStart = false;
+    }
+    else {
+      setMotors(-255,255);
+    }
+  }
 };
 
 // put function definitions here:
@@ -231,7 +231,7 @@ int findMax(int nums[SAMPLE_SIZE]) {
   return highest;
 }
 
-int findMin(int nums[SAMPLE_SIZE]) {
+int findMinFromSample(int nums[SAMPLE_SIZE]) {
   int lowest = 5000;
   for (int i = 0; i < SAMPLE_SIZE; i++) {
     if (nums[i] < lowest) {
