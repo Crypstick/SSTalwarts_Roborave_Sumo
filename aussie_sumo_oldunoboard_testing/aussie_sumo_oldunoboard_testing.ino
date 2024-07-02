@@ -11,7 +11,7 @@ void line_detection();
 
 // potentially use last value again???
 #define front_left 0
-#define front_middle 1
+#define froant_middle 1
 #define front_right 2
 #define left 3
 #define right 4
@@ -39,7 +39,6 @@ SharpIR IR_right(SharpIR::GP2Y0A21YK0F, A4 );
 
 
 // variable declaration
-int firstStart = HIGH;
 
 const int SAMPLE_SIZE = 20;
 const int SENSOR_NUM = 5;

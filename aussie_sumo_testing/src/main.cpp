@@ -1,6 +1,4 @@
 #include <Arduino.h>
-#include <iostream>
-#include <algorithm>
 #include "CytronMotorDriver.h"
 #include "Timer.h"
 #include "SharpIR.h"
@@ -13,7 +11,7 @@ void line_detection();
 
 // potentially use last value again???
 #define front_left 0
-#define front_middle 1
+#define froant_middle 1
 #define front_right 2
 #define left 3
 #define right 4
@@ -41,16 +39,18 @@ SharpIR IR_right(SharpIR::GP2Y0A21YK0F, A4 );
 
 
 // variable declaration
-int firstStart = HIGH;
 
 const int SAMPLE_SIZE = 20;
 const int SENSOR_NUM = 5;
+const int speed = 255;
+const int front_sensors_offset = 15;
 const int SENSOR_PIN[SENSOR_NUM] = {A0, A1, A2, A3, A4}; // A0 Clear, A1 Clear, A2 Clear, A3 Clear, A4 Clear
 const int frontSensors[SENSOR_NUM] = {};
 
 int sensor_readings[SENSOR_NUM][SAMPLE_SIZE];
 int readings_it[SENSOR_NUM];
 bool nums_filled[SENSOR_NUM];
+bool firstStart = true;
 
 
 
@@ -58,9 +58,8 @@ bool nums_filled[SENSOR_NUM];
 int filter_sensor(int sensor);
 int raw_sensor(int sensor);
 int findMax(int nums[SAMPLE_SIZE]);
-int findMin(int nums[SAMPLE_SIZE]);
+int findMinFromSample(int nums[SAMPLE_SIZE]);
 int findMean(int nums[SAMPLE_SIZE]);
-void debugging(int mode);
 
 void setup() {
   Serial.begin(9600); //Enable the serial comunication
@@ -76,71 +75,82 @@ void setup() {
   
 } 
 
+void readSensors(int* distance_left, int* distance_frontLeft, int* distance_frontMiddle, int* distance_frontRight, int* distance_right, int* minFront) {
+  *distance_left = filter_sensor(0);
+  *distance_frontLeft = filter_sensor(1);
+  *distance_frontMiddle = filter_sensor(2);
+  *distance_frontRight = filter_sensor(3);
+  *distance_right = filter_sensor(4);
+
+
+  int values[] = {distance_frontMiddle, distance_frontLeft, distance_frontRight};
+  *minFront = findMinFromSample(values);
+};
+
+void setMotors(int left_speed, int right_speed) {
+  leftMotor.setSpeed(left_speed);
+  rightMotor.setSpeed(right_speed);
+}
+
+int findMatch(int* values, int min) {
+  for (int i = 0; i < 5; i++) {
+    if (values[i] == min) {
+      if ((i == 1 || i == 2 || i == 3) && (abs(values[2] - values[1]) < front_sensors_offset || abs(values[2] - values[3]) < front_sensors_offset)) {
+        return 2;
+      } else {
+        return i;
+      }
+    }
+  }
+}
+
+int findMinValue(int* nums) {
+  int lowest = 5000;
+  for (int i = 0; i < 5; i++) {
+    if (nums[i] < lowest) {
+      lowest = nums[i];
+    }
+  }
+  return lowest;
+}
+
 
 void loop() {
   // put your main code here, to run repeatedly:
 
   // change pin numbers as required
-  int distance_frontLeft = filter_sensor(0);
-  int distance_frontMiddle = filter_sensor(1);
-  int distance_frontRight = filter_sensor(2);
-  int distance_left = filter_sensor(3);
-  int distance_right = filter_sensor(4);
+  int distance_left;
+  int distance_frontLeft;
+  int distance_frontMiddle;
+  int distance_frontRight;
+  int distance_right;
+  int minFront;
+  readSensors(&distance_left, &distance_frontLeft, &distance_frontMiddle, &distance_frontRight, &distance_right, &minFront);
 
-  int minimumFront = std::min({distance_frontMiddle, distance_frontLeft, distance_frontRight});
+  int values[] = {distance_left, distance_frontLeft, distance_frontMiddle, distance_frontRight, distance_right};
+  int min = findMinValue(values);
 
-  int values[] = {distance_frontMiddle, distance_frontLeft, distance_frontRight};
-  int minFront = findMin(values);
+  int direction = findMatch(values, min);
+  Serial.println(direction);
 
-  
-
-
-
-  bool isOpponentFront = (minFront < 75 && minFront > 0);
-  if (isOpponentFront) {
-      if (minFront == distance_frontMiddle) {
-        Serial.println("hi middle");
-        leftMotor.setSpeed(255);
-        rightMotor.setSpeed(255);
-      }
-      else if (minFront == distance_frontLeft) {
-        Serial.println("hi front lefty");
-        while (!(distance_frontMiddle < 75)) {
-        leftMotor.setSpeed(-200 + distance_frontLeft); // adjusts speed of rotation based on distance. if far away, curve is smoother. if close, curve is steeper
-        rightMotor.setSpeed(255);
-        }
-        
-
-        /*
-        note: while loop could be an issue, big blocking code and if you dont track well, its suicide cos cld end up running it and stuck within while without line detection...
-
-        last_value = front_left
-        if (last_value = front_left) {
-          // run above code?
-        */
-        }
-      else {
-        Serial.println("hi front righty");
-        while (!(distance_frontMiddle < 75)) {
-        leftMotor.setSpeed(255);
-        rightMotor.setSpeed(-200 + distance_frontLeft); // adjusts speed of rotation based on distance. if far away, curve is smoother. if close, curve is steeper
-        }
-      }
-    } else if (distance_left < 75 && distance_left < distance_right) {
-      Serial.println("hi lefty");
-    } else if (distance_right < 75 && distance_right < distance_left) {
-      Serial.println("hi righty");
-    } else {
-      if (firstStart == HIGH) { //slight move forward if match js started and can't detect anywhere
-        leftMotor.setSpeed(100);
-        rightMotor.setSpeed(100); 
-        firstStart = LOW;
-      } else { // start rotating till detection happens
-      leftMotor.setSpeed(-180); 
-      rightMotor.setSpeed(180);
-      Serial.println("rotating");
-      };
-    };
+  if (min > 6 && min < 30) { // tune range as required
+    if (direction == 0 || direction == 1) {
+      setMotors(speed * -1, speed);
+    } else if (direction == 2) {
+      setMotors(speed, speed);
+    } else if (direction == 3 || direction == 4) {
+      setMotors(speed, speed * -1);
+    }
+  } else {
+    if (firstStart) {
+      setMotors(255, 255);
+      delay(100);
+      firstStart = false;
+    }
+    else {
+      setMotors(-255,255);
+    }
+  }
 };
 
 // put function definitions here:
@@ -219,7 +229,7 @@ int findMax(int nums[SAMPLE_SIZE]) {
   return highest;
 }
 
-int findMin(int nums[SAMPLE_SIZE]) {
+int findMinFromSample(int nums[SAMPLE_SIZE]) {
   int lowest = 5000;
   for (int i = 0; i < SAMPLE_SIZE; i++) {
     if (nums[i] < lowest) {
@@ -234,6 +244,10 @@ int findMean(int nums[SAMPLE_SIZE]) {
   for (int i = 0; i < SAMPLE_SIZE; i++) {
     sum += nums[i];
   }
-  return sum / SAMPLE_SIZE;
+  if (sum / SAMPLE_SIZE < 5) {
+    return 1000;
+  } else {
+    return sum / SAMPLE_SIZE;
+  }
 }
 
