@@ -17,8 +17,10 @@ const int SENSOR_NUM = 5;
 const int SENSOR_PIN[SENSOR_NUM] = {A0, A1, A2, A3, A4}; // A0 Clear, A1 Clear, A2 Clear, A3 Clear, A4 Clear
 const int front_sensors_offset = 15; // threshold for when a bot is considered infront
 
-const int line_left = 7;
-const int line_right = 8;
+const int line_left = 5;
+const int line_right = 6;
+
+const int start_switch = 7;
 
 CytronMD leftMotor(PWM_DIR, 9, 8);
 CytronMD rightMotor(PWM_DIR, 11, 13);
@@ -58,6 +60,7 @@ void setup() {
   Serial.begin(9600); //Enable the serial comunication
   pinMode(line_left, INPUT);
   pinMode(line_right, INPUT);
+  pinMode(start_switch, INPUT_PULLUP);
   // set initialison latch to false
   for (int i = 0; i < SENSOR_NUM; i++) {
     nums_filled[i] = false;
@@ -77,7 +80,7 @@ void loop() {
     int min = sensor_values[lowest_it];
   
     if (firstStart) {
-      if (game_start){
+      if (start_switch == LOW){
         //sumo rules
         delay(1500);
         setMotors(255, 255);
