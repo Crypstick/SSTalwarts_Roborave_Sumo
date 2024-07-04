@@ -102,28 +102,23 @@ int line_detection() {
   int lineDetect_right = digitalRead(line_right);
 
   if (lineDetect_left == HIGH and lineDetect_right == HIGH) { //
-    leftMotor.setSpeed(-180);
-    rightMotor.setSpeed(-180);
+    setMotors(-180, -180);
     delay(150);
     return 1;
   }
   if (lineDetect_left == HIGH) {
-    leftMotor.setSpeed(-180);
-    rightMotor.setSpeed(-180);
+    setMotors(-180, -180);
     delay(150);
     // turn right
-    leftMotor.setSpeed(180);
-    rightMotor.setSpeed(-180);
+    setMotors(180, -180);
     delay(100);
     return 1;
   }
   if (lineDetect_right == HIGH){
-    leftMotor.setSpeed(-180);
-    rightMotor.setSpeed(-180);
+    setMotors(-180, -180);
     delay(150);
     // turn left
-    leftMotor.setSpeed(-180); 
-    rightMotor.setSpeed(180);
+    setMotors(-180, 180);
     delay(100);
     return 1;
   }
