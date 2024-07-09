@@ -66,6 +66,7 @@ void setup() {
   for (int i = 0; i < SENSOR_NUM; i++) {
     nums_filled[i] = false;
     readings_it[i] = 0;
+    Serial.println("hi");
   }
   game_start = true;
 
@@ -75,35 +76,43 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
   update_all_sensors();
-  Serial.println(raw_sensor(2));
+  for (int i = 0; i< 5; i++) {
+    Serial.print(raw_sensor(i));
+    Serial.print("\t");
+  }
+  Serial.println();
+  //Serial.println(sensor_values[2]);
   /*
-   if (line_detection() == 0) {
+   if (true){//line_detection() == 0) {
     int lowest_it = findMin_it(sensor_values, SENSOR_NUM);
     int direction = findDirection(lowest_it);
     int min = sensor_values[lowest_it];
 
-    Serial.println(direction);
-
-    if (firstStart) {
-      if (digitalReadFast(start_switch) == LOW){
+    if (firstStart) { //first starts
+      if (digitalReadFast(start_switch) == LOW) { // "O" is pressed. if its not pressed, bot is on and collecting sensor values.
         //sumo rules
         delay(1500);
         setMotors(255, 255);
         delay(100);
-        firstStart = false;
-      } 
+        firstStart = false; // sets it to move on to the following else if statement
+      }
     } 
-    else if (min > 6 && min < 30) { // tune range as required
+    else if (min > 6 && min < 40) { // tune range as required
       if (direction == front_middle) setMotors(speed, speed);
       else if (direction == left || direction == front_left) setMotors(speed * -1, speed);
       else if (direction == front_right || direction == right) setMotors(speed, speed * -1);
     } 
     else {
-      // setMotors(-255,255);
-      setMotors(0, 0);
+      setMotors(-180,180); // when cant detect anything, its gonna start spinning.
+      // setMotors(0, 0);
     }
+    //Serial.print(direction);
+    //Serial.print(" ");
+    //Serial.println(min);
+   
   }
-  */
+   */
+  
   
   delay(10);
   
@@ -166,7 +175,7 @@ int findDirection(int lowest_it) {
 //bot ir processing
 void update_all_sensors(){
   for (int i = 0; i < SENSOR_NUM; i++) {
-    sensor_values[i] = filter_sensor(SENSOR_PIN[i]);
+    sensor_values[i] = filter_sensor(i);
   }
 }
 
@@ -177,7 +186,7 @@ int filter_sensor(int sensor) {
   if (!nums_filled[sensor]) {
     nums_filled[sensor] = true;
     for (int i = 0; i < SAMPLE_SIZE - 1; i++) {
-      if (sensor_readings[sensor][i] == 0) {
+      if (sensor_readings[sensor][i] == 0 && sensor_readings[sensor][i] > 6) {
         sensor_readings[sensor][i] = distance;
         nums_filled[sensor] = false;
         break;
