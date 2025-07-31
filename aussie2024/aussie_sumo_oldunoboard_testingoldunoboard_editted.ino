@@ -94,7 +94,7 @@ void loop() {
       else if (direction == front_right || direction == right) setMotors(speed, speed * -1);
     } 
     else {
-      setMotors(-255,255);
+      setMotors(0,0);
     }
   }
 }
