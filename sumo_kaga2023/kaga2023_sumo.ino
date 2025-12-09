@@ -352,32 +352,3 @@ void loop() {
   }
   delay(10);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-//reference
-/*
-  LeftMotor.setSpeed(-255);   // Motor 1 runs forward at full speed.
-  RightMotor.setSpeed(-255);  // Motor 2 runs backward at full speed.
-  delay(1000);
-
-  LeftMotor.setSpeed(150);   // Motor 1 runs forward at full speed.
-  RightMotor.setSpeed(150);  // Motor 2 runs backward at full speed.
-  delay(1000);
-*/
